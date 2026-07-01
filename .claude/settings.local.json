@@ -16,7 +16,10 @@
       "Bash(env -u ANTHROPIC_API_KEY -u TAVILY_API_KEY python -m resume_job_finder.cli find --resume x.pdf --country us)",
       "Bash(python -)",
       "Bash(printenv)",
-      "Bash(python -m pip install -q \"google-genai>=0.3.0\")"
+      "Bash(python -m pip install -q \"google-genai>=0.3.0\")",
+      "Bash(python -m pip install -q -e .)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
     ]
   }
 }
