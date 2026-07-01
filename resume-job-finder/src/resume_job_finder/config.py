@@ -47,6 +47,9 @@ class Settings:
     anthropic_model: str = DEFAULT_ANTHROPIC_MODEL
     gemini_model: str = DEFAULT_GEMINI_MODEL
     effort: str = "high"
+    match_effort: str = "medium"
+    timeout: float = 180.0
+    max_listings: int = 120
 
     @property
     def model(self) -> str:
@@ -88,4 +91,7 @@ class Settings:
             anthropic_model=os.getenv("RJF_MODEL", DEFAULT_ANTHROPIC_MODEL).strip(),
             gemini_model=os.getenv("RJF_GEMINI_MODEL", DEFAULT_GEMINI_MODEL).strip(),
             effort=os.getenv("RJF_EFFORT", "high").strip(),
+            match_effort=os.getenv("RJF_MATCH_EFFORT", "medium").strip(),
+            timeout=float(os.getenv("RJF_TIMEOUT", "180")),
+            max_listings=int(os.getenv("RJF_MAX_LISTINGS", "120")),
         )

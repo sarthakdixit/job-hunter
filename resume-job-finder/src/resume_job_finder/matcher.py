@@ -35,15 +35,28 @@ def match_jobs(
     settings: Settings,
     min_score: int = 60,
     top_n: int = 25,
-) -> list[JobMatch]:
-    """Score search hits against the profile and return the best matches."""
-    if not hits:
-        return []
+) -> tuple[list[JobMatch], int]:
+    """Score search hits against the profile.
 
-    listings = [
-        {"company": h.company, "title": h.title, "url": h.url, "snippet": h.snippet[:600]}
-        for h in hits
-    ]
+    Returns (matches, listings_sent) — the second value is how many de-duplicated
+    listings were actually sent to the LLM (bounded by settings.max_listings).
+    """
+    if not hits:
+        return [], 0
+
+    # De-duplicate by URL — search often returns the same posting several times.
+    seen: set[str] = set()
+    listings: list[dict] = []
+    for h in hits:
+        if h.url in seen:
+            continue
+        seen.add(h.url)
+        listings.append(
+            {"company": h.company, "title": h.title, "url": h.url, "snippet": h.snippet[:500]}
+        )
+
+    # Bound the payload so the matching call stays fast and within token limits.
+    listings = listings[: settings.max_listings]
 
     user = (
         "Candidate profile:\n"
@@ -52,8 +65,10 @@ def match_jobs(
         f"{json.dumps(listings, indent=2)}\n\n"
         "Return the matches, best fit first."
     )
-    result = parse_structured(settings, _SYSTEM, user, _MatchResult, max_tokens=8192)
+    result = parse_structured(
+        settings, _SYSTEM, user, _MatchResult, max_tokens=8192, effort=settings.match_effort
+    )
 
     matches = [m for m in result.matches if m.fit_score >= min_score]
     matches.sort(key=lambda m: m.fit_score, reverse=True)
-    return matches[:top_n]
+    return matches[:top_n], len(listings)

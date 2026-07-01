@@ -8,12 +8,13 @@ from pathlib import Path
 
 import typer
 from rich.console import Console
-from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn
+from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 
 from . import companies as companies_mod
 from . import report
 from .analyzer import analyze_resume
 from .config import Settings
+from .llm import LLMTimeoutError
 from .matcher import match_jobs
 from .models import Company
 from .resume_parser import parse_resume
@@ -89,8 +90,12 @@ def find(
         console.print(f"[red]{exc}[/]")
         raise typer.Exit(1)
 
-    with console.status(f"[bold]Analyzing resume with {settings.provider}..."):
-        profile = analyze_resume(resume_text, settings)
+    try:
+        with console.status(f"[bold]Analyzing resume with {settings.provider}..."):
+            profile = analyze_resume(resume_text, settings)
+    except LLMTimeoutError as exc:
+        console.print(f"[red]{exc}[/]")
+        raise typer.Exit(1)
     report.print_profile(console, profile)
 
     # --- 2. Search each company's career portal (concurrently) ---
@@ -125,8 +130,25 @@ def find(
     )
 
     # --- 3. Rank against the resume ---
-    with console.status("[bold]Matching openings to your profile..."):
-        matches = match_jobs(profile, hits, settings, min_score=min_score, top_n=top_n)
+    if not hits:
+        console.print("[yellow]No listings were collected, so there is nothing to match.[/]")
+        raise typer.Exit(0)
+
+    try:
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[bold]Matching openings to your profile"),
+            TimeElapsedColumn(),
+            console=console,
+            transient=True,
+        ) as progress:
+            progress.add_task("match", total=None)
+            matches, sent = match_jobs(profile, hits, settings, min_score=min_score, top_n=top_n)
+    except LLMTimeoutError as exc:
+        console.print(f"[red]{exc}[/]")
+        raise typer.Exit(1)
+
+    console.print(f"[dim]Ranked {sent} unique listings with {settings.provider}.[/]")
     report.print_matches(console, matches)
 
     # --- 4. Save + browse ---

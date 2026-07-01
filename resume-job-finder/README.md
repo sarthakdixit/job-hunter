@@ -110,7 +110,16 @@ If installed as a package (`pip install -e .`), the `rjf` command is available:
 | `TAVILY_API_KEY` | Scoped web search (both providers) | — (required) |
 | `RJF_MODEL` | Claude model | `claude-opus-4-8` |
 | `RJF_GEMINI_MODEL` | Gemini model | `gemini-2.5-pro` |
-| `RJF_EFFORT` | Anthropic reasoning effort (`low`–`max`) | `high` |
+| `RJF_EFFORT` | Anthropic effort for resume analysis (`low`–`max`) | `high` |
+| `RJF_MATCH_EFFORT` | Anthropic effort for matching (lighter = faster) | `medium` |
+| `RJF_TIMEOUT` | Per-LLM-request timeout (seconds) | `180` |
+| `RJF_MAX_LISTINGS` | Max de-duplicated listings sent to the matcher | `120` |
+
+> **If a run seems stuck at "Matching openings…":** the matcher makes one LLM
+> call over all collected listings. It now shows elapsed time, de-duplicates and
+> caps listings (`RJF_MAX_LISTINGS`), uses lighter effort (`RJF_MATCH_EFFORT`),
+> and times out after `RJF_TIMEOUT`s. To go faster, run with fewer companies
+> (`--max-companies 20`) or a lighter model.
 
 ## Notes & limits
 
