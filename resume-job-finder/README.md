@@ -40,6 +40,13 @@ pip install -r requirements.txt
 cp .env.example .env    # add TAVILY_API_KEY + your chosen LLM key (see below)
 ```
 
+Optional — enable headless-browser rendering for JS-heavy careers pages:
+
+```bash
+pip install -e ".[render]"
+python -m playwright install chromium
+```
+
 ### LLM provider
 
 Resume analysis and matching run on either **Anthropic (Claude)** or **Google
@@ -146,9 +153,17 @@ This fallback only runs for companies where search returned fewer postings than
 `--per-company`. Disable it with `--no-fetch-pages`. If you'd still rather see
 landing pages than nothing, use `--allow-listings`.
 
-> Note: purely client-side-rendered pages expose no posting links in their HTML
-> either, so companies without an ATS board or server-rendered links may still
-> return few results.
+For purely client-side-rendered pages (no ATS board, no server-rendered links),
+add `--render`: a headless Chromium (Playwright) loads the careers page, waits
+for it to render, and the same extraction runs on the live DOM. It's opt-in and
+slower — it runs sequentially, only for companies still short after the static
+pass, capped by `--max-render` (default 25). Requires the `[render]` extra
+(see Setup); without it, `--render` prints an install hint and is skipped.
+
+```bash
+python -m resume_job_finder.cli find -r cv.pdf -c in -s Bengaluru \
+  --max-companies 20 --render -o matches.md
+```
 
 ## Notes & limits
 

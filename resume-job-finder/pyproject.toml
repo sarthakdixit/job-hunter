@@ -16,6 +16,11 @@ dependencies = [
     "pydantic>=2.7.0",
 ]
 
+[project.optional-dependencies]
+# Headless-browser rendering for JS-heavy careers pages (opt-in; heavy).
+# After installing, run: python -m playwright install chromium
+render = ["playwright>=1.40"]
+
 [project.scripts]
 rjf = "resume_job_finder.cli:app"
 

@@ -67,19 +67,33 @@ def extract_postings(
     timeout: float = 15.0,
 ) -> list[SearchHit]:
     """Return specific postings discovered from the company's careers page."""
-    url = company.careers_url
-    if not url:
+    if not company.careers_url:
         return []
 
     try:
         resp = requests.get(
-            url, headers={"User-Agent": _UA}, timeout=timeout, allow_redirects=True
+            company.careers_url, headers={"User-Agent": _UA}, timeout=timeout, allow_redirects=True
         )
         resp.raise_for_status()
         html = resp.text
     except Exception:  # noqa: BLE001 - fail soft, skip this company
         return []
 
+    return extract_from_html(company, html, company.careers_url, location, max_results, timeout)
+
+
+def extract_from_html(
+    company: Company,
+    html: str,
+    base_url: str,
+    location: str | None = None,
+    max_results: int = 5,
+    timeout: float = 15.0,
+) -> list[SearchHit]:
+    """Extract postings from already-fetched HTML (static or browser-rendered).
+
+    Shared by the static fetch path and the Playwright renderer.
+    """
     hits: list[SearchHit] = []
     seen: set[str] = set()
 
@@ -101,7 +115,7 @@ def extract_postings(
     except Exception:  # noqa: BLE001 - malformed HTML, use whatever parsed
         pass
     for href, text in parser.links:
-        full = urljoin(url, href)
+        full = urljoin(base_url, href)
         if company.domain and not _same_site(full, company.domain):
             continue
         if not is_specific_posting(full, text):

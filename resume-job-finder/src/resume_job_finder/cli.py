@@ -49,6 +49,14 @@ def find(
         "--fetch-pages/--no-fetch-pages",
         help="If search finds too few postings, mine the careers page + ATS boards",
     ),
+    render: bool = typer.Option(
+        False,
+        "--render/--no-render",
+        help="Render JS-heavy careers pages with a headless browser (needs Playwright)",
+    ),
+    max_render: int = typer.Option(
+        25, "--max-render", help="Cap how many careers pages the browser renders"
+    ),
     min_score: int = typer.Option(60, "--min-score", help="Minimum fit score (0-100)"),
     top_n: int = typer.Option(25, "--top", help="Max matches to return"),
     output: Path = typer.Option(None, "--output", "-o", help="Save report (.md or .json)"),
@@ -114,6 +122,7 @@ def find(
     # --- 2. Search each company's career portal (concurrently) ---
     client = make_client(settings)
     hits: list[SearchHit] = []
+    render_queue: list[Company] = []
     failures = 0
     with Progress(
         TextColumn("[bold]Searching career portals"),
@@ -138,12 +147,20 @@ def find(
                 for c in company_list
             }
             for fut in as_completed(futures):
+                company = futures[fut]
                 try:
-                    hits.extend(fut.result())
+                    result = fut.result()
                 except SearchError:
                     failures += 1
-                finally:
-                    progress.advance(task)
+                    result = []
+                hits.extend(result)
+                # Companies still short on postings are candidates for rendering.
+                if render and len(result) < per_company and company.careers_url:
+                    render_queue.append(company)
+                progress.advance(task)
+
+    if render and render_queue:
+        _render_pass(render_queue, hits, location_hint, per_company, max_render)
 
     kind = "specific postings" if postings_only else "listings"
     console.print(
@@ -197,6 +214,47 @@ def list_countries() -> None:
     """List bundled country codes with curated company lists."""
     codes = companies_mod.available_countries()
     console.print("Bundled country lists: " + (", ".join(codes) or "(none)"))
+
+
+def _render_pass(
+    queue: list[Company],
+    hits: list[SearchHit],
+    location_hint: str | None,
+    per_company: int,
+    max_render: int,
+) -> None:
+    """Render JS-heavy careers pages sequentially and merge new postings in."""
+    from .render import RenderUnavailable, renderer
+
+    if len(queue) > max_render:
+        console.print(
+            f"[dim]Rendering the first {max_render} of {len(queue)} JS-heavy pages "
+            f"(raise with --max-render).[/]"
+        )
+        queue = queue[:max_render]
+
+    seen = {h.url for h in hits}
+    added = 0
+    try:
+        with renderer() as browser, Progress(
+            SpinnerColumn(),
+            TextColumn("[bold]Rendering careers pages"),
+            TextColumn("{task.completed}/{task.total}"),
+            TimeElapsedColumn(),
+            console=console,
+        ) as progress:
+            task = progress.add_task("render", total=len(queue))
+            for company in queue:
+                for hit in browser.postings(company, location_hint, per_company):
+                    if hit.url not in seen:
+                        seen.add(hit.url)
+                        hits.append(hit)
+                        added += 1
+                progress.advance(task)
+    except RenderUnavailable as exc:
+        console.print(f"[yellow]Rendering skipped — {exc}[/]")
+        return
+    console.print(f"[dim]Rendering added {added} more postings.[/]")
 
 
 def _resolve_companies(companies: Path | None, country: str | None) -> list[Company]:
