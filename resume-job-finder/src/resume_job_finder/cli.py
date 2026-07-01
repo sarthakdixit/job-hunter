@@ -44,6 +44,11 @@ def find(
         "--postings-only/--allow-listings",
         help="Keep only specific job postings, not careers landing pages",
     ),
+    fetch_pages: bool = typer.Option(
+        True,
+        "--fetch-pages/--no-fetch-pages",
+        help="If search finds too few postings, mine the careers page + ATS boards",
+    ),
     min_score: int = typer.Option(60, "--min-score", help="Minimum fit score (0-100)"),
     top_n: int = typer.Option(25, "--top", help="Max matches to return"),
     output: Path = typer.Option(None, "--output", "-o", help="Save report (.md or .json)"),
@@ -121,7 +126,14 @@ def find(
         with ThreadPoolExecutor(max_workers=8) as pool:
             futures = {
                 pool.submit(
-                    search_company, client, profile, c, per_company, location_hint, postings_only
+                    search_company,
+                    client,
+                    profile,
+                    c,
+                    per_company,
+                    location_hint,
+                    postings_only,
+                    fetch_pages,
                 ): c
                 for c in company_list
             }

@@ -132,12 +132,23 @@ site surfaces its *local* roles.
 
 By default the tool returns **individual job postings** (URLs with a
 requisition id or a posting slug) and drops careers home/search/landing pages.
-If a company's site renders its jobs via JavaScript, search engines can't index
-the individual postings — so you may get few or no results for it. In that case:
 
-- run with `--allow-listings` to include careers/landing pages as a fallback, or
-- lean on companies whose postings *are* indexable (ATS-hosted ones — Greenhouse,
-  Lever, Workday — expose clean per-posting URLs).
+When web search under-delivers for a company (its jobs are JS-rendered and not
+indexed), the tool **fetches the careers page directly** and extracts postings:
+
+1. it detects an embedded **Greenhouse or Lever** board and queries that ATS's
+   public JSON API — the most reliable source of clean per-posting URLs
+   (and filters those by your `--state`/`--country`), then
+2. falls back to parsing `<a>` links out of the page HTML, keeping same-site
+   URLs that look like specific postings.
+
+This fallback only runs for companies where search returned fewer postings than
+`--per-company`. Disable it with `--no-fetch-pages`. If you'd still rather see
+landing pages than nothing, use `--allow-listings`.
+
+> Note: purely client-side-rendered pages expose no posting links in their HTML
+> either, so companies without an ATS board or server-rendered links may still
+> return few results.
 
 ## Notes & limits
 

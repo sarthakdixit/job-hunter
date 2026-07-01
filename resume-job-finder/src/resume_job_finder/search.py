@@ -91,12 +91,17 @@ def search_company(
     max_results: int = 5,
     location: str | None = None,
     postings_only: bool = True,
+    fetch_pages: bool = True,
 ) -> list[SearchHit]:
     """Search a single company's career portal for relevant openings.
 
     When `postings_only` is True (default), results are filtered to URLs that
     look like individual job postings, dropping careers landing/search pages.
     We over-fetch so there are enough candidates left after filtering.
+
+    When `fetch_pages` is True and search yields fewer postings than requested,
+    fall back to fetching the careers page and extracting posting links (incl.
+    embedded Greenhouse/Lever ATS boards).
     """
     query = build_query(profile, company, location)
 
@@ -134,6 +139,17 @@ def search_company(
         postings.append(hit)
         if len(postings) >= max_results:
             break
+
+    # Fallback: search under-delivered, so mine the careers page directly.
+    if fetch_pages and postings_only and len(postings) < max_results and company.careers_url:
+        from .extractor import extract_postings
+
+        seen = {h.url for h in postings}
+        for hit in extract_postings(company, location, max_results - len(postings)):
+            if hit.url not in seen:
+                seen.add(hit.url)
+                postings.append(hit)
+
     return postings
 
 
