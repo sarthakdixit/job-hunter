@@ -39,6 +39,11 @@ def find(
     ),
     max_companies: int = typer.Option(100, "--max-companies", help="Cap companies searched"),
     per_company: int = typer.Option(5, "--per-company", help="Results per company"),
+    postings_only: bool = typer.Option(
+        True,
+        "--postings-only/--allow-listings",
+        help="Keep only specific job postings, not careers landing pages",
+    ),
     min_score: int = typer.Option(60, "--min-score", help="Minimum fit score (0-100)"),
     top_n: int = typer.Option(25, "--top", help="Max matches to return"),
     output: Path = typer.Option(None, "--output", "-o", help="Save report (.md or .json)"),
@@ -115,7 +120,9 @@ def find(
         task = progress.add_task("search", total=len(company_list))
         with ThreadPoolExecutor(max_workers=8) as pool:
             futures = {
-                pool.submit(search_company, client, profile, c, per_company, location_hint): c
+                pool.submit(
+                    search_company, client, profile, c, per_company, location_hint, postings_only
+                ): c
                 for c in company_list
             }
             for fut in as_completed(futures):
@@ -126,15 +133,22 @@ def find(
                 finally:
                     progress.advance(task)
 
+    kind = "specific postings" if postings_only else "listings"
     console.print(
-        f"[dim]Collected {len(hits)} listings from {len(company_list)} companies"
+        f"[dim]Collected {len(hits)} {kind} from {len(company_list)} companies"
         + (f" ({failures} search errors)" if failures else "")
         + "[/]"
     )
 
     # --- 3. Rank against the resume ---
     if not hits:
-        console.print("[yellow]No listings were collected, so there is nothing to match.[/]")
+        console.print("[yellow]No specific postings were found on the searched portals.[/]")
+        if postings_only:
+            console.print(
+                "[yellow]Many career sites render jobs via JavaScript, which search "
+                "engines don't index. Re-run with [bold]--allow-listings[/bold] to include "
+                "careers pages, or narrow with fewer, ATS-based companies.[/]"
+            )
         raise typer.Exit(0)
 
     try:

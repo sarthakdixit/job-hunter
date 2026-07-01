@@ -128,10 +128,21 @@ site surfaces its *local* roles.
 > and times out after `RJF_TIMEOUT`s. To go faster, run with fewer companies
 > (`--max-companies 20`) or a lighter model.
 
+## Specific postings vs. landing pages
+
+By default the tool returns **individual job postings** (URLs with a
+requisition id or a posting slug) and drops careers home/search/landing pages.
+If a company's site renders its jobs via JavaScript, search engines can't index
+the individual postings — so you may get few or no results for it. In that case:
+
+- run with `--allow-listings` to include careers/landing pages as a fallback, or
+- lean on companies whose postings *are* indexable (ATS-hosted ones — Greenhouse,
+  Lever, Workday — expose clean per-posting URLs).
+
 ## Notes & limits
 
-- Results depend on what each careers site exposes to search; some portals hide
-  listings behind JavaScript and may return fewer hits.
+- Results depend on what each careers site exposes to search; JS-rendered
+  portals may return only a landing page (see above).
 - Respect each site's terms of service and `robots.txt`. This tool queries a
   search API rather than crawling sites directly.
 - Excluded domains are configurable in `src/resume_job_finder/config.py`.
