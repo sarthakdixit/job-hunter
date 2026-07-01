@@ -24,7 +24,11 @@
       "Bash(tail -1)",
       "Bash(echo \"compile OK\")",
       "Bash(python -m resume_job_finder.cli find --help)",
-      "Bash(ANTHROPIC_API_KEY=d TAVILY_API_KEY=d python -m resume_job_finder.cli find -r x.pdf -c in --dry-run)"
+      "Bash(ANTHROPIC_API_KEY=d TAVILY_API_KEY=d python -m resume_job_finder.cli find -r x.pdf -c in --dry-run)",
+      "Bash(python -m pip install -q \"playwright>=1.40\")",
+      "Bash(echo \"pip exit:$?\")",
+      "Bash(python -m playwright install chromium)",
+      "Bash(echo \"browser install exit:$?\")"
     ]
   }
 }
