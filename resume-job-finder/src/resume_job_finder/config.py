@@ -37,6 +37,20 @@ DEFAULT_ANTHROPIC_MODEL = "claude-opus-4-8"
 DEFAULT_GEMINI_MODEL = "gemini-2.5-pro"
 PROVIDERS = ("anthropic", "gemini")
 
+# Country codes -> human-readable names, used to scope searches to a region
+# (important for global MNCs whose careers sites list worldwide roles).
+COUNTRY_NAMES: dict[str, str] = {
+    "in": "India",
+    "us": "United States",
+}
+
+
+def country_label(code: str | None) -> str | None:
+    """Human-readable country name for a code, or the code itself if unknown."""
+    if not code:
+        return None
+    return COUNTRY_NAMES.get(code.strip().lower(), code)
+
 
 @dataclass
 class Settings:

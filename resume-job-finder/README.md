@@ -89,9 +89,16 @@ If installed as a package (`pip install -e .`), the `rjf` command is available:
 
 ## Company lists
 
+"Top companies in a country" includes **foreign MNCs operating there** (e.g.
+Google, Amazon, Goldman Sachs in India), not only locally-headquartered firms.
+**Product-based companies are listed first**, because the list is searched
+top-down and `--max-companies` caps from the top — so order = priority.
+Searches are scoped to the chosen country/state, so an MNC's global careers
+site surfaces its *local* roles.
+
 - **Bundled:** `data/companies/<code>.json` (e.g. `in.json`, `us.json`), each
-  with ~100 top companies and their careers domains. Extend or edit by adding
-  entries:
+  with ~100 top companies and their careers domains, product companies first.
+  Extend or edit by adding entries:
   ```json
   { "name": "Company", "careers_url": "https://careers.company.com/", "domain": "careers.company.com" }
   ```

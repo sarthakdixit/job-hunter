@@ -22,12 +22,17 @@ class SearchHit:
     snippet: str
 
 
-def build_query(profile: ResumeProfile, company: Company) -> str:
-    """Construct a focused careers-page query for one company."""
+def build_query(profile: ResumeProfile, company: Company, location: str | None = None) -> str:
+    """Construct a focused careers-page query for one company.
+
+    `location` (e.g. "Bengaluru, India" or "India") biases results toward roles
+    in that region — essential for global MNCs whose sites list worldwide jobs.
+    """
     role = profile.target_roles[0] if profile.target_roles else "job"
     keywords = " ".join(profile.search_keywords[:4])
     scope = "" if company.domain else f'"{company.name}" careers'
-    return f"{role} {keywords} {scope} jobs openings".strip()
+    loc = f"in {location}" if location else ""
+    return " ".join(part for part in (role, keywords, scope, loc, "jobs openings") if part).strip()
 
 
 def search_company(
@@ -35,9 +40,10 @@ def search_company(
     profile: ResumeProfile,
     company: Company,
     max_results: int = 5,
+    location: str | None = None,
 ) -> list[SearchHit]:
     """Search a single company's career portal for relevant openings."""
-    query = build_query(profile, company)
+    query = build_query(profile, company, location)
 
     kwargs: dict = {
         "query": query,

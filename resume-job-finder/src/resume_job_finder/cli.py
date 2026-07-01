@@ -13,7 +13,7 @@ from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn, TimeEl
 from . import companies as companies_mod
 from . import report
 from .analyzer import analyze_resume
-from .config import Settings
+from .config import Settings, country_label
 from .llm import LLMTimeoutError
 from .matcher import match_jobs
 from .models import Company
@@ -68,8 +68,11 @@ def find(
         console.print(f"[red]{exc}[/]")
         raise typer.Exit(1)
 
-    if state:
-        console.print(f"[dim]Region filter noted: {state} (applied during matching)[/]")
+    # Location hint scopes searches to a region (state + country name).
+    loc_parts = [p for p in (state, country_label(country)) if p]
+    location_hint = ", ".join(loc_parts) or None
+    if location_hint:
+        console.print(f"[dim]Scoping job search to: {location_hint}[/]")
     company_list = company_list[:max_companies]
 
     console.print(f"[dim]LLM provider: {settings.provider} ({settings.model})[/]")
@@ -112,7 +115,7 @@ def find(
         task = progress.add_task("search", total=len(company_list))
         with ThreadPoolExecutor(max_workers=8) as pool:
             futures = {
-                pool.submit(search_company, client, profile, c, per_company): c
+                pool.submit(search_company, client, profile, c, per_company, location_hint): c
                 for c in company_list
             }
             for fut in as_completed(futures):
