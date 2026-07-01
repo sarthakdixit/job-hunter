@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(claude-api)",
+      "Skill(claude-api:*)",
+      "Bash(py --version)",
+      "Bash(pip --version)",
+      "Bash(python -m py_compile src/resume_job_finder/*.py)",
+      "Bash(pip install *)",
+      "Bash(echo \"---exit:$?---\")",
+      "Bash(export PYTHONPATH=src)",
+      "Bash(python -m resume_job_finder.cli --help)",
+      "Bash(python -m resume_job_finder.cli countries)",
+      "Bash(ANTHROPIC_API_KEY=dummy TAVILY_API_KEY=dummy python -m resume_job_finder.cli find --resume x.pdf --country in --dry-run)",
+      "Bash(python -m pip install -q -r requirements.txt)",
+      "Bash(env -u ANTHROPIC_API_KEY -u TAVILY_API_KEY python -m resume_job_finder.cli find --resume x.pdf --country us)",
+      "Bash(python -)",
+      "Bash(printenv)",
+      "Bash(python -m pip install -q \"google-genai>=0.3.0\")"
+    ]
+  }
+}
